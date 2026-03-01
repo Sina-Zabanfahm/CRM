@@ -1,0 +1,37 @@
+# ---------------------------
+# Python virtual environment
+# ---------------------------
+myenv/
+
+# ---------------------------
+# Python cache / compiled files
+# ---------------------------
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# ---------------------------
+# macOS system files
+# ---------------------------
+.DS_Store
+
+# ---------------------------
+# Logs
+# ---------------------------
+*.log
+
+# ---------------------------
+# Config / secret / SSH files
+# ---------------------------
+*.pem
+*.key
+*.pub
+"ssh-keygen -t ed25519 -C \"your@email.com\""
+"ssh-keygen -t ed25519 -C \"your@email.com\".pub"
+
+# ---------------------------
+# Optional: Jupyter / temp files
+# ---------------------------
+.ipynb_checkpoints/
+*.swp
