@@ -17,7 +17,11 @@ class LLMFactory:
     @classmethod
     def create_from_config(cls, llm_config: LLMConfig) -> BaseChatModel:
         if llm_config.provider == OPENROUTER:
+<<<<<<< HEAD
             return cls.create_from_config_or(llm_config)
+=======
+            return cls.create_openrouter(llm_config)
+>>>>>>> 2ff330d (llm_factory, openrouater implementation)
     
     @classmethod
     def create_openrouter(cls, llm_config: LLMConfig) -> BaseChatModel:
