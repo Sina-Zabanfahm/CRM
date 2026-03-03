@@ -46,7 +46,11 @@ class AppConfig(BaseModel):
         result = cls.model_validate(raw_dict)
         return result
     
-
+    def get_llm_config(self, name:str) -> LLMConfig:
+        return next((llm_config for llm_config in self.llm_configs 
+                     if llm_config.name == name), None)
+    
+    
 _app_config: AppConfig | None = None
 
 def get_app_config() -> AppConfig:

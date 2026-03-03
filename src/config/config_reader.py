@@ -8,7 +8,6 @@ import yaml
 
 def load_dict(path: Path) -> Dict[str, Any]:
     suffix = path.suffix
-
     if suffix == ".json":
         return load_json(path)
     if suffix == ".yaml":
