@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 from src.environment_variables.constants import APP_CONFIG_PATH
 from src.config.llm_config import LLMConfig
-from config_reader import load_dict
+from src.config.config_reader import load_dict
 
 
 load_dotenv()
@@ -18,7 +18,7 @@ class AppConfig(BaseModel):
         default_factory= list, description = "Available LLMs"
     )
 
-    def resolve_config_path(cls, config_path: str | None) -> Path:
+    def resolve_config_path(cls, config_path: str | None = None) -> Path:
         if config_path is not None:
             path = Path(config_path)
             if not Path.exists(path):
@@ -40,7 +40,7 @@ class AppConfig(BaseModel):
         )
     
     @classmethod
-    def read_from_file(cls, config_path: str | None) -> 'AppConfig':
+    def read_from_file(cls, config_path: str | None = None) -> 'AppConfig':
         resolved_path = cls.resolve_config_path(config_path)
         raw_dict = load_dict(resolved_path)
         result = cls.model_validate(raw_dict)
@@ -50,7 +50,7 @@ class AppConfig(BaseModel):
         return next((llm_config for llm_config in self.llm_configs 
                      if llm_config.name == name), None)
     
-    
+
 _app_config: AppConfig | None = None
 
 def get_app_config() -> AppConfig:

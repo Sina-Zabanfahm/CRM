@@ -9,4 +9,6 @@ class LLMConfig(BaseModel):
     name: str = Field(..., description = "model_name")
     provider: str = Field(..., description= "Api provider")
     group_name: str = Field(..., description = "tag for grouping models")
+    api_key: str | None = None
+    base_url: str | None = None
     model_config = ConfigDict(extra = "allow")
