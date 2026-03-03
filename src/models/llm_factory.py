@@ -17,11 +17,7 @@ class LLMFactory:
     @classmethod
     def create_from_config(cls, llm_config: LLMConfig) -> BaseChatModel:
         if llm_config.provider == OPENROUTER:
-<<<<<<< HEAD
-            return cls.create_from_config_or(llm_config)
-=======
             return cls.create_openrouter(llm_config)
->>>>>>> 2ff330d (llm_factory, openrouater implementation)
     
     @classmethod
     def create_openrouter(cls, llm_config: LLMConfig) -> BaseChatModel:
@@ -32,7 +28,7 @@ class LLMFactory:
         base_url = llm_config.base_url
         if llm_config.base_url is None:
             base_url = os.getenv(OPEN_ROUTER_BASE_URL)
-            
+
         return ChatOpenAI(
             model_name = llm_config.name,
             base_url= base_url,
