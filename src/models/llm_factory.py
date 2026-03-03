@@ -32,7 +32,7 @@ class LLMFactory:
         base_url = llm_config.base_url
         if llm_config.base_url is None:
             base_url = os.getenv(OPEN_ROUTER_BASE_URL)
-
+            
         return ChatOpenAI(
             model_name = llm_config.name,
             base_url= base_url,
