@@ -7,7 +7,7 @@ T = TypeVar("T")
 class Artifact(Generic[T]):
 
     id: str
-    type: str
+    kind: str
     name: str 
     content: T
     meta: Dict[str, Any] = field(default_factory=dict)
