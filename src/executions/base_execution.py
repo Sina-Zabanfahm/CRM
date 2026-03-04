@@ -1,8 +1,8 @@
 
 from dataclasses import dataclass
 from typing import Any, Protocol, Iterable
+import uuid
 from abc import ABC, abstractmethod
-
 from src.states.artifact import Artifact
 from src.states.execution_state import ExecutionState
 
@@ -17,15 +17,18 @@ class BaseExecution(ABC):
     name: str
     input_spec: tuple[InputSpec, ...] = ()
 
-    def __init__(self):
-        self.name = self.__class__.__name__
+    def __init__(self, name:str| None = None , id:str | None = None):
+        self.name = name if name is not None else self.__class__.__name__
+        self.id = id if id is not None else uuid.uuid4()
 
     def validate_inputs(self, inputs: dict[str, Artifact[Any]]) -> None:
 
         for spec in self.input_spec:
-            if spec.required and spec.role not in  inputs:
-                raise ValueError(f"{self.name}: missing required input {spec.role}")
-            
+            if spec.role not in inputs:
+                if spec.required:
+                    raise ValueError(f"{self.name}: missing required input {spec.role}")
+                continue
+
             artifact = inputs[spec.role]
             if artifact.kind != spec.kind:
                 raise TypeError(f"""{self.name}: input {spec.role} 
@@ -40,7 +43,7 @@ class BaseExecution(ABC):
             run_id = run_id,
             inputs = inputs
         )
-
+        return outputs
         
     @abstractmethod
     def execute( 
