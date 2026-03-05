@@ -1,9 +1,11 @@
 import uuid
 
 from src.executions.crawler.crawl4ai_exection import Crawl4AIExecution
+
 from src.states.execution_state import ExecutionState
 from src.states.artifact import Artifact
 
+from src.executions.input_kinds import InputKinds
 
 def test_crawl4ai_execution():
 
@@ -12,7 +14,7 @@ def test_crawl4ai_execution():
 
     url_artifact = Artifact[str](
         id=str(uuid.uuid4()),
-        kind="text",
+        kind= InputKinds.TEXT.value,
         name="url",
         content="https://github.com/Sina-Zabanfahm/Fin_AT"
     )

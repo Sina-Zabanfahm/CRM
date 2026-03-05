@@ -8,10 +8,10 @@ from src.states.execution_state import ExecutionState
 from src.states.artifact import Artifact
 from src.executions.base_execution import (BaseExecution,
                                            InputSpec)
-
+from src.executions.input_kinds import InputKinds
 class Crawl4AIExecution(BaseExecution):
 
-    input_spec = (InputSpec(role = "url", kind = "text"), )
+    input_spec = (InputSpec(role = "url", kind = InputKinds.TEXT.value), )
 
 
     async def aexecute(self, state: ExecutionState, run_id: str,
@@ -36,3 +36,4 @@ class Crawl4AIExecution(BaseExecution):
             results = await crawler.arun(url, config = run_cfg)
 
         return results.markdown or ""
+    
