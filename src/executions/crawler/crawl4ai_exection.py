@@ -14,11 +14,11 @@ class Crawl4AIExecution(BaseExecution):
     input_spec = (InputSpec(role = "url", kind = "text"), )
 
 
-    def execute(self, state: ExecutionState, run_id: str,
+    async def aexecute(self, state: ExecutionState, run_id: str,
                 inputs: dict[str, Artifact]) -> list[Artifact[str]]:
         
         url = inputs["url"]
-        markdown = self._crawl_sync(url.content)
+        markdown = await self._crawl_async(url.content)
 
         out = Artifact[str](
             id = self.id,
@@ -27,18 +27,6 @@ class Crawl4AIExecution(BaseExecution):
             content = markdown
         )
         return [out]
-    
-    def _crawl_sync(self, url:str) -> str:
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = None
-        
-        if loop and loop.is_running():
-            raise RuntimeError(
-                "Already in an event loop - use await"
-            )
-        return asyncio.run(self._crawl_async(url))
     
     async def _crawl_async(self, url: str) -> str:
         browser_cfg = BrowserConfig(headless = True)

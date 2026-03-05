@@ -1,4 +1,6 @@
 
+import asyncio
+
 from dataclasses import dataclass
 from typing import Any, Protocol, Iterable
 import uuid
@@ -34,7 +36,17 @@ class BaseExecution(ABC):
                 raise TypeError(f"""{self.name}: input {spec.role} 
                                 need to be of the kind {artifact.kind}
                                 """)
-            
+
+    async def arun(self, state:ExecutionState, run_id: str) -> list[Artifact[Any]]:
+        inputs = state.artifacts.get(run_id, {})
+        self.validate_inputs(inputs)
+        outputs = await self.aexecute(
+            state = state,
+            run_id = run_id,
+            inputs = inputs
+        )
+        return outputs
+
     def run(self, state: ExecutionState, run_id: str) -> list[Artifact[Any]]:
         inputs = state.artifacts.get(run_id, {})
         self.validate_inputs(inputs)
@@ -45,11 +57,29 @@ class BaseExecution(ABC):
         )
         return outputs
         
+    def execute(self,
+                state:ExecutionState,
+                run_id: str,
+                inputs: dict[str, Artifact[Any]]):
+
+        self.verify_not_in_event_loop()
+        return asyncio.run(self.aexecute(state=state, run_id=run_id, inputs=inputs))
+
     @abstractmethod
-    def execute( 
+    async def aexecute( 
         self, 
         state: ExecutionState,
         run_id: str,
         inputs: dict[str, Artifact[Any]]
     ) -> list[Artifact[Any]]:
-        raise NotImplemented
+        raise NotImplemented(...)
+    
+    def verify_not_in_event_loop(self):
+        try: 
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            raise RuntimeError(f"{self.name}"
+                               "Cannot run inside an event loop" \
+            )  
