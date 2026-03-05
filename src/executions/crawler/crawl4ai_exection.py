@@ -8,21 +8,22 @@ from src.states.execution_state import ExecutionState
 from src.states.artifact import Artifact
 from src.executions.base_execution import (BaseExecution,
                                            InputSpec)
+
 from src.executions.input_kinds import InputKinds
+
 class Crawl4AIExecution(BaseExecution):
 
     input_spec = (InputSpec(role = "url", kind = InputKinds.TEXT.value), )
 
-
+    
     async def aexecute(self, state: ExecutionState, run_id: str,
                 inputs: dict[str, Artifact]) -> list[Artifact[str]]:
         
         url = inputs["url"]
         markdown = await self._crawl_async(url.content)
-
         out = Artifact[str](
             id = self.id,
-            kind = "markdown",
+            kind = InputKinds.MARKDOWN.value,
             name = self.name,
             content = markdown
         )
