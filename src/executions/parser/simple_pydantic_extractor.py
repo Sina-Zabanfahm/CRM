@@ -15,15 +15,15 @@ from src.prompts.parser import generic_extractor_prompt, generic_prompt_refiner
 
 class SimplePydanticExtractor(BaseExecution):
     input_spec = input_spec = (InputSpec(role = "content", kind = InputKinds.TEXT.value),
-                              InputSpec(role = "schema", kind = InputKinds.SCHEMA_REF.value),
                                )
 
-    def __init__(self, llm: BaseChatModel, chunk_size: int = 3000, chunk_overlap: int = 300,
+    def __init__(self, llm: BaseChatModel, base_model:BaseModel, chunk_size: int = 3000, chunk_overlap: int = 300,
                   name:str | None = None, id: str | None = None):
         super().__init__(name,id)
         self.llm = llm
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
+        self.base_model = base_model
         self.splitter = RecursiveCharacterTextSplitter(
             chunk_size = self.chunk_size,
             chunk_overlap = self.chunk_overlap,
@@ -32,9 +32,9 @@ class SimplePydanticExtractor(BaseExecution):
 
 
     async def aexecute(self, state, run_id, inputs):
-        model = inputs["schema"]
-        text = inputs["content"]
-        result = self.aextract(model, text)
+        model = self.base_model
+        text = inputs["content"].content
+        result = await self.aextract(model, text)
         out = Artifact[str](
             id = self.id,
             kind = InputKinds.MARKDOWN.value,
