@@ -6,9 +6,9 @@ from dataclasses import dataclass, field
 @dataclass(slots=True)
 class OutboundMessage:
     """
-    Generic message to send through a channel.
+    message sent to a channel
     """
-    recipient: str
+    recipient: str 
     text: str
     metadata: Dict[str, Any] = field(default_factory=dict)
 
@@ -16,7 +16,7 @@ class OutboundMessage:
 @dataclass(slots=True)
 class SendResult:
     """
-    Result returned after sending a message.
+    message received from a channel
     """
     provider: str
     recipient: str
