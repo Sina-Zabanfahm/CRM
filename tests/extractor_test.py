@@ -25,7 +25,7 @@ def extractor_test():
     
     text_artifact = Artifact[str](
         kind= InputKinds.TEXT.value,
-        content="john i s 45 years old",
+        content="john is 45 years old",
         name = "content"
     )
     state.artifacts[run_id] = {
@@ -35,7 +35,7 @@ def extractor_test():
 
     outputs = execution.run(state, run_id)
 
-    print(outputs.content)
+    print(outputs)
     assert outputs is not None
 
     
