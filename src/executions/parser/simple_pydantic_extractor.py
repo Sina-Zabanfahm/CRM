@@ -23,7 +23,7 @@ class SimplePydanticExtractor(BaseExecution):
         super().__init__(name,id)
         self.llm = llm
         self.chunk_size = chunk_size
-        self.chunk_overlap = self.chunk_overlap
+        self.chunk_overlap = chunk_overlap
         self.splitter = RecursiveCharacterTextSplitter(
             chunk_size = self.chunk_size,
             chunk_overlap = self.chunk_overlap,
@@ -34,14 +34,14 @@ class SimplePydanticExtractor(BaseExecution):
     async def aexecute(self, state, run_id, inputs):
         model = inputs["schema"]
         text = inputs["content"]
-        result = self.aextract(model, result)
+        result = self.aextract(model, text)
         out = Artifact[str](
             id = self.id,
             kind = InputKinds.MARKDOWN.value,
             name = self.name,
             content = result
         )
-        return await super().aexecute(state, run_id, inputs)
+        return out
     
 
 
@@ -62,9 +62,9 @@ class SimplePydanticExtractor(BaseExecution):
             }
         )
 
-        chain_refine = generic_prompt_refiner
+        refine_chain = generic_prompt_refiner | self.llm | parser
         for chunk in chunks[1:]:
-            current_obj = await chain_refine.ainvoke(
+            current_obj = await refine_chain.ainvoke(
                 {
                     "current_json": current_obj.model_dump_json(),
                     "chunk": chunk,
