@@ -41,7 +41,7 @@ class SimplePydanticExtractor(BaseExecution):
             name = self.name,
             content = result
         )
-        return out
+        return [out]
     
 
 
@@ -54,21 +54,27 @@ class SimplePydanticExtractor(BaseExecution):
         
         prompt = generic_extractor_prompt
         chain = generic_extractor_prompt | self.llm | parser
-
+        print(chain)
+        print(chunks[0])
         current_obj = chain.invoke(
             {
             "chunk" : chunks[0],
             "format_instructions" : parser.get_format_instructions()
             }
         )
-
         refine_chain = generic_prompt_refiner | self.llm | parser
+        print(current_obj)
+        print(len(chunks))
         for chunk in chunks[1:]:
-            current_obj = await refine_chain.ainvoke(
-                {
-                    "current_json": current_obj.model_dump_json(),
-                    "chunk": chunk,
-                    "format_instructions": parser.get_format_instructions(),
-                }
-            )
+            try:
+                current_obj = await refine_chain.ainvoke(
+                    {
+                        "current_json": current_obj.model_dump_json(),
+                        "chunk": chunk,
+                        "format_instructions": parser.get_format_instructions(),
+                    }
+                )
+            except Exception as e:
+                pass
+            print(current_obj)
         return current_obj

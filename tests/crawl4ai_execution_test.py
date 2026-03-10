@@ -45,14 +45,14 @@ def test_crawl4ai_deep_execution():
         id=str(uuid.uuid4()),
         kind= InputKinds.TEXT.value,
         name="url",
-        content="https://ca.finance.yahoo.com/quote/DMGI.V/"
+        content="https://www.toronto.ca"
     )
 
     state.artifacts[run_id] = {
         "url": url_artifact
     }
 
-    execution = Crawl4aiDeepCrawl(max_depth=0,mean_delay=0.1)
+    execution = Crawl4aiDeepCrawl(max_depth=3,mean_delay=0.1)
 
     outputs = execution.run(state, run_id)
 

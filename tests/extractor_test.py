@@ -12,7 +12,7 @@ from src.models.llm_factory import LLMFactory
 
 
 class PersonSchema(BaseModel):
-    name: str
+    name: str 
     age: int
 
 
@@ -35,7 +35,6 @@ def extractor_test():
 
     outputs = execution.run(state, run_id)
 
-    print(outputs)
     assert outputs is not None
 
     
