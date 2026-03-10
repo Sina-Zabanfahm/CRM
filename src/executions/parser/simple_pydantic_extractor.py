@@ -17,7 +17,7 @@ class SimplePydanticExtractor(BaseExecution):
     input_spec = input_spec = (InputSpec(role = "content", kind = InputKinds.TEXT.value),
                                )
 
-    def __init__(self, llm: BaseChatModel, base_model:BaseModel, chunk_size: int = 3000, chunk_overlap: int = 300,
+    def __init__(self, llm: BaseChatModel, base_model:BaseModel, chunk_size: int = 30000, chunk_overlap: int = 300,
                   name:str | None = None, id: str | None = None):
         super().__init__(name,id)
         self.llm = llm
@@ -54,16 +54,14 @@ class SimplePydanticExtractor(BaseExecution):
         
         prompt = generic_extractor_prompt
         chain = generic_extractor_prompt | self.llm | parser
-        print(chain)
-        print(chunks[0])
-        current_obj = chain.invoke(
+        format_instruction = parser.get_format_instructions()
+        current_obj = await chain.ainvoke(
             {
             "chunk" : chunks[0],
-            "format_instructions" : parser.get_format_instructions()
+            "format_instructions" : format_instruction
             }
         )
         refine_chain = generic_prompt_refiner | self.llm | parser
-        print(current_obj)
         print(len(chunks))
         for chunk in chunks[1:]:
             try:
@@ -71,10 +69,9 @@ class SimplePydanticExtractor(BaseExecution):
                     {
                         "current_json": current_obj.model_dump_json(),
                         "chunk": chunk,
-                        "format_instructions": parser.get_format_instructions(),
+                        "format_instructions": format_instruction
                     }
                 )
             except Exception as e:
                 pass
-            print(current_obj)
         return current_obj

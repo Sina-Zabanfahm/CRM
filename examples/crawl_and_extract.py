@@ -101,17 +101,15 @@ def flatten_texts(obj: Any) -> list[str]:
 
 
 def crawl_and_extract_all(url: str, save_path: str):
-    raw_output = crawl(url)
-    texts = flatten_texts(raw_output)
-
+    texts:dict = crawl(url)
+    
     tot = {}
-
-    for index, text in enumerate(texts):
-        if not isinstance(text, str) or not text.strip():
-            continue
-
-        resp = extract(text)
-        tot[index] = resp[0].content.model_dump()
+    index = 0
+    for key, val in texts.items():
+        for text in val:
+            resp = extract(text)
+            tot[index] = resp[0].content.model_dump()
+            index+=1
 
     with open(save_path, "w", encoding="utf-8") as f:
         json.dump(tot, f, indent=2, ensure_ascii=False)
