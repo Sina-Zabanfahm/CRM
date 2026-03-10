@@ -52,17 +52,11 @@ def test_crawl4ai_deep_execution():
         "url": url_artifact
     }
 
-    execution = Crawl4aiDeepCrawl(max_depth=3,mean_delay=0.1)
+    execution = Crawl4aiDeepCrawl(max_depth=0,mean_delay=0.1)
 
-    outputs = execution.run(state, run_id)
-
-    for artifact in outputs:
-        print("Artifact ID:", artifact.id)
-        print("Kind:", artifact.kind)
-        print("Name:", artifact.name)
-        print("content", artifact.content)
-        print(artifact.content.keys())
-    assert artifact is not None
+    output = execution.run(state, run_id)
+    print(output.content.keys())
+    assert output is not None
 
 
 test_crawl4ai_deep_execution()

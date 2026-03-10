@@ -7,14 +7,7 @@ from crawl4ai import (CrawlerRunConfig,
                       CacheMode)
 from crawl4ai.content_scraping_strategy import LXMLWebScrapingStrategy
 from crawl4ai.deep_crawling import BFSDeepCrawlStrategy, BestFirstCrawlingStrategy
-from crawl4ai.deep_crawling.filters import (
-    FilterChain,
-    URLPatternFilter,
-    DomainFilter,
-    ContentTypeFilter,
-    ContentRelevanceFilter,
-    SEOFilter
-)
+from crawl4ai.models import CrawlResultContainer
 from crawl4ai.deep_crawling.scorers import (
     KeywordRelevanceScorer
 )
@@ -42,20 +35,19 @@ class Crawl4aiDeepCrawl(BaseExecution):
             mean_delay=mean_delay
         )
 
-    async def basic_deep_crawl(self, url: str) -> str:
+    async def basic_deep_crawl(self, url: str) -> CrawlResultContainer:
         config = self.crawler_config
         async with AsyncWebCrawler() as crawler:
             
             results = await crawler.arun(url = url,
                                          config = config)
             
-        pages_by_depth = {}
+        pages_by_depth = {} 
         for result in results:
             depth = (result.metadata or {}).get("depth", 0)
             if depth not in pages_by_depth:
                 pages_by_depth[depth] = []
             pages_by_depth[depth].append(result.markdown)
-
         return pages_by_depth
     
     async def aexecute( 
@@ -63,13 +55,12 @@ class Crawl4aiDeepCrawl(BaseExecution):
         state: ExecutionState,
         run_id: str,
         inputs: dict[str, Artifact[str]]
-    ) -> list[Artifact[str]]:
+    ) -> Artifact[CrawlResultContainer]:
         url = inputs["url"]
         markdown = await self.basic_deep_crawl(url.content)
-        out = Artifact[list[str]](
+        out = Artifact[list[CrawlResultContainer]](
             id = self.id,
-            kind = InputKinds.MARKDOWN,
             name = self.name,
             content = markdown
         )
-        return [out]
+        return out

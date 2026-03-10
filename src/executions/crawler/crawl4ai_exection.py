@@ -1,9 +1,8 @@
 
-import asyncio
 from crawl4ai import (AsyncWebCrawler, 
                       BrowserConfig,
                       CrawlerRunConfig)
-
+from crawl4ai.models import CrawlResultContainer
 from src.states.execution_state import ExecutionState
 from src.states.artifact import Artifact
 from src.executions.base_execution import (BaseExecution,
@@ -17,7 +16,7 @@ class Crawl4AIExecution(BaseExecution):
 
     
     async def aexecute(self, state: ExecutionState, run_id: str,
-                inputs: dict[str, Artifact]) -> list[Artifact[str]]:
+                inputs: dict[str, Artifact]) -> CrawlResultContainer:
         
         url = inputs["url"]
         markdown = await self._crawl_async(url.content)
@@ -29,12 +28,12 @@ class Crawl4AIExecution(BaseExecution):
         )
         return [out]
     
-    async def _crawl_async(self, url: str) -> str:
+    async def _crawl_async(self, url: str) -> CrawlResultContainer:
         browser_cfg = BrowserConfig(headless = True)
         run_cfg = CrawlerRunConfig()
 
         async with AsyncWebCrawler(config= browser_cfg) as crawler:
             results = await crawler.arun(url, config = run_cfg)
 
-        return results.markdown or ""
+        return results
     

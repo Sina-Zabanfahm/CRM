@@ -37,7 +37,7 @@ class BaseExecution(ABC):
                                 need to be of the kind {artifact.kind}
                                 """)
 
-    async def arun(self, state:ExecutionState, run_id: str) -> list[Artifact[Any]]:
+    async def arun(self, state:ExecutionState, run_id: str) -> Artifact[Any]:
         inputs = state.artifacts.get(run_id, {})
         self.validate_inputs(inputs)
         outputs = await self.aexecute(
@@ -47,7 +47,7 @@ class BaseExecution(ABC):
         )
         return outputs
 
-    def run(self, state: ExecutionState, run_id: str) -> list[Artifact[Any]]:
+    def run(self, state: ExecutionState, run_id: str) -> Artifact[Any]:
         inputs = state.artifacts.get(run_id, {})
         self.validate_inputs(inputs)
         outputs = self.execute(
@@ -71,7 +71,7 @@ class BaseExecution(ABC):
         state: ExecutionState,
         run_id: str,
         inputs: dict[str, Artifact[Any]]
-    ) -> list[Artifact[Any]]:
+    ) -> Artifact[str]:
         raise NotImplemented(...)
     
     def verify_not_in_event_loop(self):

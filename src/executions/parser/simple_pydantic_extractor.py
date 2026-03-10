@@ -52,7 +52,6 @@ class SimplePydanticExtractor(BaseExecution):
         
         parser = PydanticOutputParser(pydantic_object = model)
         
-        prompt = generic_extractor_prompt
         chain = generic_extractor_prompt | self.llm | parser
         format_instruction = parser.get_format_instructions()
         current_obj = await chain.ainvoke(
@@ -62,7 +61,6 @@ class SimplePydanticExtractor(BaseExecution):
             }
         )
         refine_chain = generic_prompt_refiner | self.llm | parser
-        print(len(chunks))
         for chunk in chunks[1:]:
             try:
                 current_obj = await refine_chain.ainvoke(
