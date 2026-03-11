@@ -58,7 +58,7 @@ class BaseExecution(ABC):
             inputs = inputs
         )
 
-        return self.update_state(state, outputs)
+        return outputs
         
     def execute(self,
                 state:ExecutionState,

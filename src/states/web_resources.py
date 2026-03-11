@@ -2,8 +2,8 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Generic, TypeVar
 from dataclasses import dataclass, field
 
-@dataclass
-class WebResource(slots = True):
+@dataclass(slots = True)
+class WebResource:
     url: str 
     final_url: str | None = None
     kind: str | None = None
@@ -12,3 +12,4 @@ class WebResource(slots = True):
     body: bytes | None = None 
     content: str | None = None
     error: str | None = None 
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))

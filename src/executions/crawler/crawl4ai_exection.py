@@ -2,9 +2,10 @@
 from crawl4ai import (AsyncWebCrawler, 
                       BrowserConfig,
                       CrawlerRunConfig)
-from crawl4ai.models import CrawlResultContainer
+from crawl4ai.models import CrawlResult, CrawlResultContainer
 from src.states.execution_state import ExecutionState
 from src.states.artifact import Artifact
+from src.states.web_resources import WebResource
 from src.executions.base_execution import (BaseExecution,
                                            InputSpec)
 
@@ -16,17 +17,20 @@ class Crawl4AIExecution(BaseExecution):
 
     
     async def aexecute(self, state: ExecutionState, run_id: str,
-                inputs: dict[str, Artifact]) -> CrawlResultContainer:
+                inputs: dict[str, Artifact]) -> Artifact[WebResource]:
         
         url = inputs["url"]
-        markdown = await self._crawl_async(url.content)
+        result: CrawlResult = await self._crawl_async(url.content)
         out = Artifact[str](
             id = self.id,
-            kind = InputKinds.MARKDOWN.value,
+            kind = InputKinds.WEBRESOURCE.value,
             name = self.name,
-            content = markdown
+            content = WebResource(
+                url = result.url,
+                content = result.markdown
+            )
         )
-        return [out]
+        return out
     
     async def _crawl_async(self, url: str) -> CrawlResultContainer:
         browser_cfg = BrowserConfig(headless = True)

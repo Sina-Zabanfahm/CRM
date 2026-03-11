@@ -5,3 +5,4 @@ class InputKinds(Enum):
     TEXT = "text"
     MARKDOWN = "markdown"
     DATAFRAME = "dataframe"
+    WEBRESOURCE = "web_resource"
