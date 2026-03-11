@@ -1,4 +1,5 @@
 
+from functools import partial
 import asyncio
 
 from dataclasses import dataclass
@@ -45,6 +46,7 @@ class BaseExecution(ABC):
             run_id = run_id,
             inputs = inputs
         )
+
         return outputs
 
     def run(self, state: ExecutionState, run_id: str) -> Artifact[Any]:
@@ -55,7 +57,8 @@ class BaseExecution(ABC):
             run_id = run_id,
             inputs = inputs
         )
-        return outputs
+
+        return self.update_state(state, outputs)
         
     def execute(self,
                 state:ExecutionState,
@@ -64,6 +67,11 @@ class BaseExecution(ABC):
 
         self.verify_not_in_event_loop()
         return asyncio.run(self.aexecute(state=state, run_id=run_id, inputs=inputs))
+    
+    def update_state(self, curr_state: ExecutionState, output:Artifact):
+        curr_state.artifacts[self.id] = output
+        return curr_state
+    
 
     @abstractmethod
     async def aexecute( 

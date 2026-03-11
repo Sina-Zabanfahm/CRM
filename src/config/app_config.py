@@ -13,6 +13,10 @@ load_dotenv()
 
 
 class AppConfig(BaseModel):
+    websites_csv: str | None = Field(
+        default=None,
+        description="Path to the CSV file containing website records.",
+    )
 
     llm_configs: list[LLMConfig] = Field(
         default_factory= list, description = "Available LLMs"

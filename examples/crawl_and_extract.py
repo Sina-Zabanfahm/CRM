@@ -56,7 +56,7 @@ def crawl(url: str) -> Any:
 
     execution = Crawl4aiDeepCrawl(max_depth=0)
     output = execution.run(state, run_id)
-
+    input(output)
     return output[0].content
 
 
