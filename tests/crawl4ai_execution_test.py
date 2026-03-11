@@ -57,6 +57,3 @@ def test_crawl4ai_deep_execution():
     output = execution.run(state, run_id)
     print(output.content.keys())
     assert output is not None
-
-
-test_crawl4ai_deep_execution()
