@@ -21,7 +21,7 @@ class WebResourceRoutingExecution(BaseExecution):
         run_id: str,
         inputs: dict[str, Artifact[Any]]
     ) -> Artifact[str]:
-        raise NotImplemented(...)
+        raise NotImplemented()
     
     @staticmethod 
     def inspect_url(url: str | None) -> ResourceKind:
@@ -39,12 +39,12 @@ class WebResourceRoutingExecution(BaseExecution):
     def _is_pdf_url(parsed_path: ParseResult) -> int:
         path = unquote(parsed_path.path or "").lower()
         if path.endswith(".pdf"):
-            return True
+            return 1
         
         query = parse_qs(parsed_path.query or "")
         for values in query.values():
             for value in values:
                 if unquote(value or "").strip().lower().endswith(".pdf"):
-                    return True
-        return False
+                    return 1
+        return 0
         
