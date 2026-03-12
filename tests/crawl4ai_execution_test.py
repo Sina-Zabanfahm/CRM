@@ -45,7 +45,7 @@ def test_crawl4ai_deep_execution():
         id=str(uuid.uuid4()),
         kind= InputKinds.TEXT.value,
         name="url",
-        content="https://www.toronto.ca"
+        content="https://pub-calgary.escribemeetings.com/filestream.ashx?DocumentId=352749"
     )
 
     state.artifacts[run_id] = {
@@ -55,7 +55,7 @@ def test_crawl4ai_deep_execution():
     execution = Crawl4aiDeepCrawl(max_depth=0,mean_delay=0.1)
 
     output = execution.run(state, run_id)
-    print(output.content.keys())
+    print(output.content)
     assert output is not None
 
 
