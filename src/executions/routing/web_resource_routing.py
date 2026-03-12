@@ -12,7 +12,7 @@ from src.states.web_resources import WebResource, ResourceKind
 #Classify the next resource and decide the next extraction path
 class WebResourceRoutingExecution(BaseExecution):
     input_spec = (
-        InputSpec(role = "resource", kind = InputKinds.WEBRESOURCE.value),
+        InputSpec(role = "web_resource", kind = InputKinds.WEBRESOURCE.value),
     )
 
     async def aexecute( 
@@ -21,10 +21,26 @@ class WebResourceRoutingExecution(BaseExecution):
         run_id: str,
         inputs: dict[str, Artifact[Any]]
     ) -> Artifact[str]:
+        resource: WebResource = inputs["web_resource"]
+        resource_kind = self.inspect(resource)
+        return Artifact(
+            id = self.id,
+            kind = InputKinds.WEBRESOURCE.value,
+            name = self.name,
+            content = WebResource(
+                url = resource.url,
+                content = resource.content,
+                content_type = resource_kind
+            )
+        )
         raise NotImplemented()
     
     @staticmethod 
-    def inspect_url(url: str | None) -> ResourceKind:
+    def inspect(resource: WebResource) -> ResourceKind:
+        if (resource.content is not None 
+            and len(resource.content)>=3):
+            return ResourceKind.MARKDOWN
+        url = resource.url
         url_parsed: ParseResult | None = None
         try:
             url_parsed = urlparse(url)

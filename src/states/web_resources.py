@@ -5,6 +5,7 @@ class ResourceKind(str, Enum):
     VIDEO = "video"
     AUDIO = "audio"
     PDF = "pdf"
+    MARKDOWN = "markdown"
     UNKNOWN = "unknown"
 
 
