@@ -1,6 +1,8 @@
+from typing import Any
 from enum import Enum
 from datetime import datetime, timezone
 from dataclasses import dataclass, field
+
 class ResourceKind(str, Enum):
     VIDEO = "video"
     AUDIO = "audio"
@@ -8,6 +10,10 @@ class ResourceKind(str, Enum):
     MARKDOWN = "markdown"
     UNKNOWN = "unknown"
 
+class MetaDataKind(str, Enum):
+    CRAWL4AI = "crawl4ai"
+    PLAYWRIGHT = "playwright"
+    REQUESTS = "requests"
 
 @dataclass(slots = True)
 class WebResource:
@@ -19,6 +25,7 @@ class WebResource:
     body: bytes | None = None 
     content: str | None = None
     error: str | None = None 
+    meta_data: dict[str, Any]
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     @property
