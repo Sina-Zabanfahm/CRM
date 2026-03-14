@@ -1,5 +1,4 @@
 from pydantic import BaseModel, Field
-import pytest
 
 from src.config.app_config import get_app_config
 from src.executions.parser.simple_pydantic_extractor import SimplePydanticExtractor

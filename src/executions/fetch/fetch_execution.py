@@ -36,14 +36,13 @@ class FetchExecution(BaseExecution):
         )
 
     def _fetch_resource(self, resource: WebResource) -> WebResource:
-        if resource.content is not None:
+        if (resource.content is not None and len(resource.content)) >= 5:
+            resource.kind = ResourceKind.MARKDOWN
             return resource
-        if resource.body:
-            return resource
-        if resource.content and len(resource.content) >= 3:
-            return resource
+        
         if resource.kind == ResourceKind.PDF:
             return self._fetch_full_body(resource)
+        
         return self._sniff_unknown(resource)
     
     def _sniff_unknown(self, resource: WebResource) -> WebResource:
@@ -59,7 +58,7 @@ class FetchExecution(BaseExecution):
                 response.raise_for_status()
 
                 content_type = response.headers.get("Content-Type")
-                prefix_body = self._read_prefix(response)
+                prefix_body = resource.body if resource.body is not None else self._read_prefix(response)
                 resource_kind = self._detect_from_bytes(content_type, prefix_body)
 
                 resource_mod = replace(
