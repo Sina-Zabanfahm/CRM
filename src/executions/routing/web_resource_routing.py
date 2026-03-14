@@ -33,7 +33,6 @@ class WebResourceRoutingExecution(BaseExecution):
                 content_type = resource_kind
             )
         )
-        raise NotImplemented()
     
     @staticmethod 
     def inspect(resource: WebResource) -> ResourceKind:

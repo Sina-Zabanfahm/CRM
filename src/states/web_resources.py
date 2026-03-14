@@ -13,8 +13,8 @@ class ResourceKind(str, Enum):
 class WebResource:
     url: str 
     final_url: str | None = None
-    kind: ResourceKind = ResourceKind.UNKNOWN
-    content_type: str | None = None
+    kind: ResourceKind = ResourceKind.UNKNOWN #guessed from the url
+    content_type: str | None = None #From requests.response
     status_code: int | None = None 
     body: bytes | None = None 
     content: str | None = None
