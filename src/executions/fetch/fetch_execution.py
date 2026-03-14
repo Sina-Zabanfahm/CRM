@@ -4,6 +4,7 @@ from typing import Any
 
 import requests
 from dataclasses import replace
+from playwright.async_api import async_playwright
 
 from src.executions.base_execution import (BaseExecution,
                                            InputSpec)
@@ -76,6 +77,32 @@ class FetchExecution(BaseExecution):
                 return resource_mod
 
 
+        except requests.exceptions.SSLError:
+            # Fallback: use Playwright with ignore_https_errors for broken TLS chains.
+            try:
+                final_url, status_code, content_type, body = (
+                    self._fetch_full_body_playwright_sync(resource.target_url)
+                )
+                prefix_body = body[:4096]
+                resource_kind = self._detect_from_bytes(content_type, prefix_body)
+
+                enriched = replace(
+                    resource,
+                    final_url=final_url,
+                    status_code=status_code,
+                    content_type=content_type,
+                    kind=resource_kind,
+                    error=None,
+                )
+
+                if resource_kind == ResourceKind.PDF:
+                    return replace(enriched, body=body, kind=ResourceKind.PDF)
+
+                # For non-PDF types, keep bytes out of state by default.
+                return enriched
+            except Exception as exc:
+                return replace(resource, status_code=None, error=str(exc))
+
         except requests.HTTPError as exc:
             resp = exc.response
             return replace(
@@ -137,6 +164,22 @@ class FetchExecution(BaseExecution):
                         kind=ResourceKind.PDF,
                         error=None,
                     )
+        except requests.exceptions.SSLError:
+            try:
+                final_url, status_code, content_type, body = (
+                    self._fetch_full_body_playwright_sync(resource.target_url)
+                )
+                return replace(
+                    resource,
+                    final_url=final_url,
+                    content_type=content_type,
+                    status_code=status_code,
+                    body=body,
+                    kind=ResourceKind.PDF,
+                    error=None,
+                )
+            except Exception as exc:
+                return replace(resource, status_code=None, error=str(exc))
         except requests.HTTPError as exc:
             resp = exc.response
             return replace(
@@ -148,3 +191,21 @@ class FetchExecution(BaseExecution):
             )
         except requests.RequestException as exc:
             return replace(resource, status_code=None, error=str(exc))
+
+    def _fetch_full_body_playwright_sync(
+        self, url: str
+    ) -> tuple[str, int | None, str | None, bytes]:
+        return asyncio.run(self._fetch_full_body_playwright(url))
+
+    async def _fetch_full_body_playwright(
+        self, url: str
+    ) -> tuple[str, int | None, str | None, bytes]:
+        async with async_playwright() as playwright:
+            ctx = await playwright.request.new_context(ignore_https_errors=True)
+            resp = await ctx.get(url, timeout=self.timeout * 1000)
+            body = await resp.body()
+            final_url = resp.url
+            status_code = resp.status
+            content_type = resp.headers.get("content-type")
+            await ctx.dispose()
+            return final_url, status_code, content_type, body
