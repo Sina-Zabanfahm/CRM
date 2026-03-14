@@ -23,7 +23,7 @@ class FetchExecution(BaseExecution):
         self.timeout = timeout
         super().__init__(name, id)
 
-    async def aexecute(self, state, run_id, inputs) -> Artifact[WebResource]:
+    async def aexecute(self, state: ExecutionState, run_id, inputs) -> Artifact[WebResource]:
         resource: WebResource = inputs["web_resource"].content
         fetched_res = await asyncio.to_thread(
             self._fetch_resource, resource
