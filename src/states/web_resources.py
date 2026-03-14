@@ -25,7 +25,7 @@ class WebResource:
     body: bytes | None = None 
     content: str | None = None
     error: str | None = None 
-    meta_data: dict[str, Any]
+    meta_data: dict[str, Any] = field(default_factory=dict)
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
     @property

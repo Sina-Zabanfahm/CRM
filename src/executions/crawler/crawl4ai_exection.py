@@ -5,7 +5,7 @@ from crawl4ai import (AsyncWebCrawler,
 from crawl4ai.models import CrawlResult, CrawlResultContainer
 from src.states.execution_state import ExecutionState
 from src.states.artifact import Artifact
-from src.states.web_resources import WebResource
+from src.states.web_resources import MetaDataKind, WebResource
 from src.executions.base_execution import (BaseExecution,
                                            InputSpec)
 
@@ -27,7 +27,12 @@ class Crawl4AIExecution(BaseExecution):
             name = self.name,
             content = WebResource(
                 url = result.url,
-                content = result.markdown
+                content = result.markdown,
+                meta_data = {
+                    MetaDataKind.CRAWL4AI.value: {
+                        "metadata": result.metadata or {}
+                    }
+                }
             )
         )
         return out

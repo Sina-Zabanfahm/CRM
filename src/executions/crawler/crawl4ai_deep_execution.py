@@ -16,7 +16,7 @@ from src.executions.input_kinds import InputKinds
 
 from src.states.artifact import Artifact
 from src.states.execution_state import ExecutionState
-from src.states.web_resources import WebResource
+from src.states.web_resources import MetaDataKind, WebResource
 class Crawl4aiDeepCrawl(BaseExecution):
     
     input_spec = (InputSpec(role = "url", kind = InputKinds.TEXT.value), )
@@ -51,6 +51,11 @@ class Crawl4aiDeepCrawl(BaseExecution):
                 WebResource(
                     url = result.url,
                     content= result.markdown,
+                    meta_data = {
+                        MetaDataKind.CRAWL4AI.value: {
+                            "metadata": result.metadata or {}
+                        }
+                    }
                 )
             )
         return pages_by_depth

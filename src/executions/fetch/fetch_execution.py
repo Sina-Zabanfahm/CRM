@@ -11,7 +11,7 @@ from src.executions.base_execution import (BaseExecution,
 from src.executions.input_kinds import InputKinds
 from src.states.artifact import Artifact
 from src.states.execution_state import ExecutionState
-from src.states.web_resources import ResourceKind, WebResource
+from src.states.web_resources import MetaDataKind, ResourceKind, WebResource
 
 #Fetch Response metadata and bytes
 class FetchExecution(BaseExecution):
@@ -67,6 +67,11 @@ class FetchExecution(BaseExecution):
                     status_code=status_code,
                     content_type=content_type,
                     kind=resource_kind,
+                    meta_data=self._merge_meta_data(
+                        resource,
+                        MetaDataKind.REQUESTS,
+                        {"headers": self._headers_to_dict(response.headers)},
+                    ),
                     error=None,
                 )
 
@@ -79,7 +84,7 @@ class FetchExecution(BaseExecution):
         except requests.exceptions.SSLError:
             # Fallback: use Playwright with ignore_https_errors for broken TLS chains.
             try:
-                final_url, status_code, content_type, body = (
+                final_url, status_code, content_type, headers, body = (
                     self._fetch_full_body_playwright_sync(resource.target_url)
                 )
                 prefix_body = body[:4096]
@@ -91,6 +96,11 @@ class FetchExecution(BaseExecution):
                     status_code=status_code,
                     content_type=content_type,
                     kind=resource_kind,
+                    meta_data=self._merge_meta_data(
+                        resource,
+                        MetaDataKind.PLAYWRIGHT,
+                        {"headers": headers},
+                    ),
                     error=None,
                 )
 
@@ -109,6 +119,16 @@ class FetchExecution(BaseExecution):
                 final_url=(resp.url if resp is not None else resource.final_url),
                 status_code=(resp.status_code if resp is not None else None),
                 content_type=(resp.headers.get("Content-Type") if resp is not None else None),
+                meta_data=self._merge_meta_data(
+                    resource,
+                    MetaDataKind.REQUESTS,
+                    {
+                        "headers": (
+                            self._headers_to_dict(resp.headers) if resp is not None else {}
+                        ),
+                        "error_type": exc.__class__.__name__,
+                    },
+                ),
                 error=str(exc),
             )
         except requests.RequestException as exc:
@@ -116,6 +136,11 @@ class FetchExecution(BaseExecution):
             return replace(
                 resource,
                 status_code=None,
+                meta_data=self._merge_meta_data(
+                    resource,
+                    MetaDataKind.REQUESTS,
+                    {"error_type": exc.__class__.__name__},
+                ),
                 error=str(exc),
             )
         
@@ -161,11 +186,16 @@ class FetchExecution(BaseExecution):
                         status_code=status_code,
                         body=response.content,
                         kind=ResourceKind.PDF,
+                        meta_data=self._merge_meta_data(
+                            resource,
+                            MetaDataKind.REQUESTS,
+                            {"headers": self._headers_to_dict(response.headers)},
+                        ),
                         error=None,
                     )
         except requests.exceptions.SSLError:
             try:
-                final_url, status_code, content_type, body = (
+                final_url, status_code, content_type, headers, body = (
                     self._fetch_full_body_playwright_sync(resource.target_url)
                 )
                 return replace(
@@ -175,10 +205,24 @@ class FetchExecution(BaseExecution):
                     status_code=status_code,
                     body=body,
                     kind=ResourceKind.PDF,
+                    meta_data=self._merge_meta_data(
+                        resource,
+                        MetaDataKind.PLAYWRIGHT,
+                        {"headers": headers},
+                    ),
                     error=None,
                 )
             except Exception as exc:
-                return replace(resource, status_code=None, error=str(exc))
+                return replace(
+                    resource,
+                    status_code=None,
+                    meta_data=self._merge_meta_data(
+                        resource,
+                        MetaDataKind.PLAYWRIGHT,
+                        {"error_type": exc.__class__.__name__},
+                    ),
+                    error=str(exc),
+                )
         except requests.HTTPError as exc:
             resp = exc.response
             return replace(
@@ -186,19 +230,38 @@ class FetchExecution(BaseExecution):
                 final_url=(resp.url if resp is not None else resource.final_url),
                 status_code=(resp.status_code if resp is not None else None),
                 content_type=(resp.headers.get("Content-Type") if resp is not None else None),
+                meta_data=self._merge_meta_data(
+                    resource,
+                    MetaDataKind.REQUESTS,
+                    {
+                        "headers": (
+                            self._headers_to_dict(resp.headers) if resp is not None else {}
+                        ),
+                        "error_type": exc.__class__.__name__,
+                    },
+                ),
                 error=str(exc),
             )
         except requests.RequestException as exc:
-            return replace(resource, status_code=None, error=str(exc))
+            return replace(
+                resource,
+                status_code=None,
+                meta_data=self._merge_meta_data(
+                    resource,
+                    MetaDataKind.REQUESTS,
+                    {"error_type": exc.__class__.__name__},
+                ),
+                error=str(exc),
+            )
 
     def _fetch_full_body_playwright_sync(
         self, url: str
-    ) -> tuple[str, int | None, str | None, bytes]:
+    ) -> tuple[str, int | None, str | None, dict[str, str], bytes]:
         return asyncio.run(self._fetch_full_body_playwright(url))
 
     async def _fetch_full_body_playwright(
         self, url: str
-    ) -> tuple[str, int | None, str | None, bytes]:
+    ) -> tuple[str, int | None, str | None, dict[str, str], bytes]:
         async with async_playwright() as playwright:
             ctx = await playwright.request.new_context(ignore_https_errors=True)
             resp = await ctx.get(url, timeout=self.timeout * 1000)
@@ -206,5 +269,29 @@ class FetchExecution(BaseExecution):
             final_url = resp.url
             status_code = resp.status
             content_type = resp.headers.get("content-type")
+            headers = dict(resp.headers)
             await ctx.dispose()
-            return final_url, status_code, content_type, body
+            return final_url, status_code, content_type, headers, body
+
+    @staticmethod
+    def _headers_to_dict(headers: Any) -> dict[str, str]:
+        return {str(key): str(value) for key, value in dict(headers).items()}
+
+    @staticmethod
+    def _merge_meta_data(
+        resource: WebResource,
+        meta_kind: MetaDataKind,
+        payload: dict[str, Any],
+    ) -> dict[str, Any]:
+        merged_meta = dict(resource.meta_data)
+        existing_payload = merged_meta.get(meta_kind.value, {})
+
+        if isinstance(existing_payload, dict):
+            merged_meta[meta_kind.value] = {
+                **existing_payload,
+                **payload,
+            }
+        else:
+            merged_meta[meta_kind.value] = payload
+
+        return merged_meta
