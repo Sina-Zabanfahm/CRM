@@ -17,6 +17,7 @@ __pycache__/
 *.pem
 *.key
 *.pub
+*.db
 "ssh-keygen -t ed25519 -C \"your@email.com\""
 "ssh-keygen -t ed25519 -C \"your@email.com\".pub"
 .ipynb_checkpoints/

@@ -17,7 +17,10 @@ class AppConfig(BaseModel):
         default=None,
         description="Path to the CSV file containing website records.",
     )
-
+    resource_db : str | None = Field(
+        default= None,
+        description= "Path to resource_db"
+    )
     llm_configs: list[LLMConfig] = Field(
         default_factory= list, description = "Available LLMs"
     )
