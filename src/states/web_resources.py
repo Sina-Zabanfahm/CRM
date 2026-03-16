@@ -34,7 +34,7 @@ class WebResource:
     error: str | None = None 
     meta_data: dict[str, Any] = field(default_factory=dict)
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    fingerprints: ResourceFingerPrint = field(default_factory = ResourceFingerPrint)
+    fingerprints: ResourceFingerprint = field(default_factory = ResourceFingerprint)
 
     @property
     def target_url(self):
