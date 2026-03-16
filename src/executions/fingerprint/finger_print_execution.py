@@ -49,4 +49,29 @@ class FingerprintExecution(BaseExecution):
     
     @staticmethod
     def _compute_simhash(resource: WebResource) -> int | None:
-        raise NotImplementedError
+        if resource.content is None:
+            return None
+
+        text = " ".join(resource.content.lower().split())
+        if len(text) < 3:
+            return None
+
+        grams = [text[index:index + 3] for index in range(len(text) - 2)]
+        bit_weights = [0] * 64
+
+        for gram in grams:
+            gram_hash = hashlib.sha256(gram.encode("utf-8")).digest()
+            gram_int = int.from_bytes(gram_hash[:8], byteorder="big", signed=False)
+
+            for bit_index in range(64):
+                if gram_int & (1 << bit_index):
+                    bit_weights[bit_index] += 1
+                else:
+                    bit_weights[bit_index] -= 1
+
+        simhash = 0
+        for bit_index, weight in enumerate(bit_weights):
+            if weight > 0:
+                simhash |= 1 << bit_index
+
+        return simhash
