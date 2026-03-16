@@ -1,6 +1,8 @@
 
 import asyncio
+
 from dataclasses import replace
+import hashlib
 
 from src.executions.input_kinds import InputKinds
 from src.executions.base_execution import BaseExecution, InputSpec
@@ -35,11 +37,15 @@ class FingerprintExecution(BaseExecution):
         )
     @staticmethod
     def _compute_byte_sha256(resource: WebResource) -> str | None:
-        raise NotImplementedError
+        if resource.body is None:
+            return None
+        return hashlib.sha256(resource.body).hexdigest()
     
     @staticmethod
     def _compute_text_sha256(resource: WebResource) -> str | None:
-        raise NotImplementedError
+        if resource.content is None or len(resource.content) == 0 :
+            return None
+        return hashlib.sha256(resource.content.encode("utf-8")).hexdigest()
     
     @staticmethod
     def _compute_simhash(resource: WebResource) -> int | None:
