@@ -7,12 +7,12 @@ from datetime import datetime, timezone
 from src.states.web_resources import ResourceKind, WebResource
 
 
-dataclass(slots =True)
+@dataclass(slots=True)
 class ResourceRecord:
     url: str
     final_url: str | None = None
     kind: ResourceKind = ResourceKind.UNKNOWN
-    content_kind: str | None = None
+    content_type: str | None = None
 
     last_crawled_at : datetime = field(
         default_factory = lambda : datetime.now(timezone.utc)
@@ -20,7 +20,7 @@ class ResourceRecord:
 
     body_sha256: str | None = None
     text_sha256: str | None = None
-    simhas: str | None = None 
+    simhash: str | None = None
 
     @classmethod
     def from_web_resource(
