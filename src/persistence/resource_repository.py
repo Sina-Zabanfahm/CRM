@@ -79,13 +79,13 @@ class ResourceRepository(BaseRepository[str, ResourceRecord]):
             )
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(url) DO UPDATE SET
-                final_url=exclude.final_url,
-                kind = exclude.kind,
-                content_type = exclude.content_type,
-                last_crawled_at = exclude.last_crawled_at,
-                body_sha256 = exclude.body_sha256,
-                text_sha256 = exclude.text_sha256,
-                simhash = exclude.simhash
+                final_url=excluded.final_url,
+                kind = excluded.kind,
+                content_type = excluded.content_type,
+                last_crawled_at = excluded.last_crawled_at,
+                body_sha256 = excluded.body_sha256,
+                text_sha256 = excluded.text_sha256,
+                simhash = excluded.simhash
             """,
             (
                     value.url,
