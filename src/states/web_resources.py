@@ -15,6 +15,13 @@ class MetaDataKind(str, Enum):
     PLAYWRIGHT = "playwright"
     REQUESTS = "requests"
 
+@dataclass
+class FingerprintData:
+    byte_sha: str | None = None
+    text_sha: str | None = None
+    simhash: int | None = None
+
+
 @dataclass(slots = True)
 class WebResource:
     url: str 
@@ -27,6 +34,7 @@ class WebResource:
     error: str | None = None 
     meta_data: dict[str, Any] = field(default_factory=dict)
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    fingerprints: FingerprintData = field(default_factory = FingerprintData)
 
     @property
     def target_url(self):
