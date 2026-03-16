@@ -2,7 +2,7 @@
 # Python virtual environment
 # ---------------------------
 myenv/
-
+data/
 # ---------------------------
 # Python cache / compiled files
 # ---------------------------
