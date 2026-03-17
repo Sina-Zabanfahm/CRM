@@ -35,6 +35,7 @@ class WebResource:
     meta_data: dict[str, Any] = field(default_factory=dict)
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     fingerprints: ResourceFingerprint = field(default_factory = ResourceFingerprint)
+    should_pass_to_llm: bool = True
 
     @property
     def target_url(self):
