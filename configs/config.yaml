@@ -1,6 +1,6 @@
 
 websites_csv: "data/websites.csv"
-repository_db: "data/repository_db.db"
+resource_db: "data/repository_db.db"
 llm_configs:
   - name: "meta-llama/llama-3.3-70b-instruct"
     group_name: "general"
