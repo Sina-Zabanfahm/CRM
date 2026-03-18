@@ -17,10 +17,11 @@ class MetaDataKind(str, Enum):
 
 @dataclass(slots = True)
 class CrawlTarget:
-    url: str 
+    base_url: str
+    allowed_prefixes: list[str] = field(default_factory=list)
     name: str | None = None
+    debth: int = 0
     activ: bool = True
-    allowed_prefixes: list[str]
 
 @dataclass
 class ResourceFingerprint:
