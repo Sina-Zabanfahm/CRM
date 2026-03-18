@@ -15,6 +15,13 @@ class MetaDataKind(str, Enum):
     PLAYWRIGHT = "playwright"
     REQUESTS = "requests"
 
+@dataclass(slots = True)
+class CrawlTarget:
+    url: str 
+    name: str | None = None
+    activ: bool = True
+    allowed_prefixes: list[str]
+
 @dataclass
 class ResourceFingerprint:
     byte_sha: str | None = None
