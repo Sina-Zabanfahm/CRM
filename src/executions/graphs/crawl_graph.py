@@ -9,6 +9,7 @@ from src.executions.fingerprint.finger_print_execution import FingerprintExecuti
 from src.executions.gating.llm_gate_execution import LlmGateExecution
 from src.executions.input_kinds import InputKinds
 from src.executions.normalize.normalize_execution import NormalizeExecution
+from src.executions.parser.simple_pydantic_extractor import SimplePydanticExtractor
 from src.states.artifact import Artifact
 from src.states.execution_state import ExecutionState
 from src.states.web_resources import CrawlTarget, WebResource
@@ -20,6 +21,7 @@ class CrawlGraph:
     def __init__(
         self,
         targets: list[CrawlTarget],
+        pydantic_extractor: SimplePydanticExtractor,
         *,
         mean_delay: float = 0.1,
         fetch_execution: FetchExecution | None = None,
@@ -35,7 +37,8 @@ class CrawlGraph:
             fingerprint_execution or FingerprintExecution()
         )
         self.gate_execution = gate_execution or LlmGateExecution()
-
+        self.pydantic_extractor = pydantic_extractor
+        self.semantic_extracts: list = []
     async def run(self) -> list[WebResource]:
         state = ExecutionState()
         processed_resources: list[WebResource] = []
@@ -61,6 +64,22 @@ class CrawlGraph:
                     resource_index,
                     resource,
                 )
+                curr_content: WebResource = processed_resource
+                run_id = f"target-{target_index}"
+                if curr_content.should_pass_to_llm:
+                    text_artifact = Artifact[WebResource](
+                    id=f"target-{target_index}",
+                    kind=InputKinds.WEBRESOURCE.value,
+                    content=curr_content,
+                    name="web_resource",
+                    )
+                    state.artifacts[run_id] = {
+                        "web_resource": text_artifact
+                    }
+                    try:
+                        self.semantic_extracts+= await self.pydantic_extractor.arun(state, run_id)
+                    except Exception as e:
+                        print(e)
                 processed_resources.append(processed_resource)
 
         logger.info(

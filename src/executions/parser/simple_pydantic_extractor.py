@@ -9,12 +9,13 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from src.states.artifact import Artifact
 from src.states.execution_state import ExecutionState
+from src.states.web_resources import WebResource
 from src.executions.base_execution import BaseExecution, InputSpec
 from src.executions.input_kinds import InputKinds
 from src.prompts.parser import generic_extractor_prompt, generic_prompt_refiner
 
 class SimplePydanticExtractor(BaseExecution):
-    input_spec = input_spec = (InputSpec(role = "content", kind = InputKinds.TEXT.value),
+    input_spec = input_spec = (InputSpec(role = "web_resource", kind = InputKinds.WEBRESOURCE.value),
                                )
 
     def __init__(self, llm: BaseChatModel, base_model:BaseModel, chunk_size: int = 30000, chunk_overlap: int = 300,
@@ -33,13 +34,15 @@ class SimplePydanticExtractor(BaseExecution):
 
     async def aexecute(self, state, run_id, inputs):
         model = self.base_model
-        text = inputs["content"].content
+        resource: WebResource = inputs["web_resource"].content
+        text = resource.content
         result = await self.aextract(model, text)
         out = Artifact[str](
             id = self.id,
             kind = InputKinds.MARKDOWN.value,
             name = self.name,
-            content = result
+            content = result,
+            meta={"url": resource.url}
         )
         return [out]
     
