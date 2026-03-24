@@ -19,9 +19,8 @@ class ProcurementSignal(BaseModel):
         "EOI",
         "Notice",
         "Addendum",
-        "Award",
-        "Unknown"
-    ] = Field(..., description="Type of procurement-related signal found in the markdown.")
+    ] = Field(..., description="Type of procurement-related signal found in the markdown. Or signals that lead and can " \
+    "deduce procurement related.")
 
     title: str = Field(..., description="Title of the opportunity or notice.")
     description: str = Field(..., description="Description of the offering")
@@ -41,7 +40,7 @@ logging.basicConfig(level=logging.INFO)
 def test_crawl_graph(debth = 0):
     target = CrawlTarget(
         name="Calgary Council",
-        base_url="https://pub-calgary.escribemeetings.com/Meeting.aspx?Id=a289cb13-b0c5-40df-8208-baea2ede6873&Agenda=Agenda&lang=English",
+        base_url="https://pub-calgary.escribemeetings.com/?MeetingViewID=2&fillWidth=1&Year=2026",
         debth=debth,
         allowed_prefixes=[],
         activ=True,
@@ -63,6 +62,18 @@ def test_crawl_graph(debth = 0):
             }
         index+=1
     save_path = rf"/Users/sinazabanfahm/projects/CRM/data/result.json"
+    content_save_path = rf"/Users/sinazabanfahm/projects/CRM/data/contents_result.json"
+
+    res = {}
+    index = 0 
+    for resource in resources:
+        res[index] = resource.content
+    
+    with open(content_save_path, "w", encoding="utf-8") as f:
+        json.dump(res, f, indent=2, ensure_ascii=False)
+
+
+
     with open(save_path, "w", encoding="utf-8") as f:
         json.dump(tot, f, indent=2, ensure_ascii=False)
 
@@ -80,4 +91,4 @@ def test_crawl_graph(debth = 0):
 
     
 
-test_crawl_graph(0)
+test_crawl_graph(2)
