@@ -1,11 +1,52 @@
 import asyncio
+from io import BytesIO
+
+from pypdf import PdfWriter
 
 from src.executions.fetch.fetch_execution import FetchExecution
 from src.executions.normalize.normalize_execution import NormalizeExecution
 from src.executions.input_kinds import InputKinds
 from src.states.artifact import Artifact
 from src.states.execution_state import ExecutionState
-from src.states.web_resources import WebResource
+from src.states.web_resources import ResourceKind, WebResource
+
+
+def build_blank_pdf(page_count: int = 2) -> bytes:
+    writer = PdfWriter()
+    for _ in range(page_count):
+        writer.add_blank_page(width=72, height=72)
+
+    buffer = BytesIO()
+    writer.write(buffer)
+    return buffer.getvalue()
+
+
+def test_normalize_pdf_returns_page_artifacts():
+    state = ExecutionState()
+    run_id = "normalize_pdf_pages_test"
+
+    resource = WebResource(
+        url="https://example.com/document.pdf",
+        kind=ResourceKind.PDF,
+        body=build_blank_pdf(page_count=2),
+    )
+
+    state.artifacts[run_id] = {
+        "web_resource": Artifact(
+            id=run_id,
+            kind=InputKinds.WEBRESOURCE.value,
+            name="web_resource",
+            content=resource,
+        )
+    }
+
+    normalized_artifacts = asyncio.run(NormalizeExecution().arun(state, run_id))
+
+    assert len(normalized_artifacts) == 2
+    assert normalized_artifacts[0].content.url.endswith("#page=1")
+    assert normalized_artifacts[1].content.url.endswith("#page=2")
+    assert normalized_artifacts[0].content.meta_data["page_number"] == 1
+    assert normalized_artifacts[1].content.meta_data["page_number"] == 2
 
 
 async def main():
@@ -47,20 +88,20 @@ async def main():
     }
 
     normalize_execution = NormalizeExecution()
-    normalized_artifact = await normalize_execution.aexecute(
+    normalized_artifacts = await normalize_execution.aexecute(
         state,
         run_id,
         state.artifacts[run_id],
     )
-
-    content = normalized_artifact.content.content
-    preview = None if content is None else content
-
     print("\nAfter normalize")
-    print("  kind:", normalized_artifact.content.kind)
-    print("  content length:", None if content is None else len(content))
-    print("  preview:", preview)
-    print("  error:", normalized_artifact.content.error)
+    print("  artifacts:", len(normalized_artifacts))
+    for index, normalized_artifact in enumerate(normalized_artifacts, start=1):
+        content = normalized_artifact.content.content
+        preview = None if content is None else content
+        print(f"  page {index} kind:", normalized_artifact.content.kind)
+        print(f"  page {index} content length:", None if content is None else len(content))
+        print(f"  page {index} preview:", preview)
+        print(f"  page {index} error:", normalized_artifact.content.error)
 
 
 if __name__ == "__main__":

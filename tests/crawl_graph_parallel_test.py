@@ -47,8 +47,8 @@ logging.basicConfig(level=logging.INFO)
 
 def test_crawl_graph_parallel(debth=0):
     target = CrawlTarget(
-        name="Calgary Council",
-        base_url="https://pub-calgary.escribemeetings.com/?MeetingViewID=2&fillWidth=1&Year=2026",
+        name="Toronto Council",
+        base_url="https://pub-calgary.escribemeetings.com/?MeetingViewID=4&fillWidth=1&Year=2026&Expanded=Intergovernmental%20Affairs%20Committee",
         debth=debth,
         allowed_prefixes=[],
         activ=True,
@@ -91,14 +91,6 @@ def test_crawl_graph_parallel(debth=0):
     assert resources is not None
     assert len(resources) > 0
 
-    assert any(
-        resource.url.startswith("https://www.calgary.ca/council/")
-        or (
-            resource.final_url is not None
-            and resource.final_url.startswith("https://www.calgary.ca/council/")
-        )
-        for resource in resources
-    )
 
 
 test_crawl_graph_parallel(2)

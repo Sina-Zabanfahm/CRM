@@ -58,29 +58,32 @@ class CrawlGraph:
             )
 
             for resource_index, resource in enumerate(crawled_resources):
-                processed_resource = await self._process_resource(
+                processed_resource_outputs = await self._process_resource(
                     state,
                     target_index,
                     resource_index,
                     resource,
                 )
-                curr_content: WebResource = processed_resource
-                run_id = f"target-{target_index}"
-                if curr_content.should_pass_to_llm:
-                    text_artifact = Artifact[WebResource](
-                    id=f"target-{target_index}",
-                    kind=InputKinds.WEBRESOURCE.value,
-                    content=curr_content,
-                    name="web_resource",
-                    )
-                    state.artifacts[run_id] = {
-                        "web_resource": text_artifact
-                    }
-                    try:
-                        self.semantic_extracts+= await self.pydantic_extractor.arun(state, run_id)
-                    except Exception as e:
-                        print(e)
-                processed_resources.append(processed_resource)
+                for output_index, curr_content in enumerate(processed_resource_outputs):
+                    run_id = f"target-{target_index}-resource-{resource_index}-output-{output_index}"
+                    if curr_content.should_pass_to_llm:
+                        text_artifact = Artifact[WebResource](
+                            id=run_id,
+                            kind=InputKinds.WEBRESOURCE.value,
+                            content=curr_content,
+                            name="web_resource",
+                        )
+                        state.artifacts[run_id] = {
+                            "web_resource": text_artifact
+                        }
+                        try:
+                            self.semantic_extracts += await self.pydantic_extractor.arun(
+                                state,
+                                run_id,
+                            )
+                        except Exception as e:
+                            print(e)
+                    processed_resources.append(curr_content)
 
         logger.info(
             "Crawl graph completed with %s processed resources.",
@@ -129,7 +132,7 @@ class CrawlGraph:
         target_index: int,
         resource_index: int,
         resource: WebResource,
-    ) -> WebResource:
+    ) -> list[WebResource]:
         run_id = f"target-{target_index}-resource-{resource_index}"
         logger.info(
             "Processing resource %s for target %s: %s",
@@ -144,29 +147,61 @@ class CrawlGraph:
             content=resource,
         )
 
-        for execution in (
-            self.fetch_execution,
-            self.normalize_execution,
-            self.fingerprint_execution,
-            self.gate_execution,
-        ):
-            state.artifacts[run_id] = {"web_resource": current_artifact}
-            logger.info(
-                "Running %s for resource %s of target %s.",
-                execution.name,
-                resource_index,
-                target_index,
-            )
-            current_artifact = await execution.arun(state, run_id)
-
+        state.artifacts[run_id] = {"web_resource": current_artifact}
         logger.info(
-            "Finished resource %s for target %s. should_pass_to_llm=%s error=%s",
+            "Running %s for resource %s of target %s.",
+            self.fetch_execution.name,
             resource_index,
             target_index,
-            current_artifact.content.should_pass_to_llm,
-            current_artifact.content.error,
         )
-        return current_artifact.content
+        fetched_artifact = await self.fetch_execution.arun(state, run_id)
+
+        state.artifacts[run_id] = {"web_resource": fetched_artifact}
+        logger.info(
+            "Running %s for resource %s of target %s.",
+            self.normalize_execution.name,
+            resource_index,
+            target_index,
+        )
+        normalized_artifacts = await self.normalize_execution.arun(state, run_id)
+
+        logger.info(
+            "NormalizeExecution produced %s artifact(s) for resource %s of target %s.",
+            len(normalized_artifacts),
+            resource_index,
+            target_index,
+        )
+
+        processed_resources: list[WebResource] = []
+        for page_index, normalized_artifact in enumerate(normalized_artifacts):
+            page_run_id = f"{run_id}-page-{page_index}"
+            current_artifact = normalized_artifact
+
+            for execution in (
+                self.fingerprint_execution,
+                self.gate_execution,
+            ):
+                state.artifacts[page_run_id] = {"web_resource": current_artifact}
+                logger.info(
+                    "Running %s for resource %s page %s of target %s.",
+                    execution.name,
+                    resource_index,
+                    page_index,
+                    target_index,
+                )
+                current_artifact = await execution.arun(state, page_run_id)
+
+            logger.info(
+                "Finished resource %s page %s for target %s. should_pass_to_llm=%s error=%s",
+                resource_index,
+                page_index,
+                target_index,
+                current_artifact.content.should_pass_to_llm,
+                current_artifact.content.error,
+            )
+            processed_resources.append(current_artifact.content)
+
+        return processed_resources
 
     @staticmethod
     def _is_allowed_resource(target: CrawlTarget, resource: WebResource) -> bool:

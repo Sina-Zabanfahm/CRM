@@ -40,14 +40,14 @@ async def main():
     }
 
     normalize_execution = NormalizeExecution()
-    normalized_artifact = await normalize_execution.aexecute(
+    normalized_artifacts = await normalize_execution.aexecute(
         state,
         run_id,
         state.artifacts[run_id],
     )
 
     state.artifacts[run_id] = {
-        "web_resource": normalized_artifact
+        "web_resource": normalized_artifacts[0]
     }
 
     fingerprint_execution = FingerprintExecution()
