@@ -69,7 +69,8 @@ def test_crawl_graph_parallel(debth=0):
     for extract in semantic_extracts:
         tot[index] = {
             "result": extract.content.model_dump(),
-            "url": extract.meta["url"]
+            "url": extract.meta["url"],
+            "page_number": extract.meta.get("page_number"),
         }
         index += 1
     save_path = rf"/Users/sinazabanfahm/projects/CRM/data/result_parallel.json"
@@ -78,7 +79,11 @@ def test_crawl_graph_parallel(debth=0):
     res = {}
     index = 0
     for resource in resources:
-        res[index] = resource.content
+        res[index] = {
+            "content": resource.content,
+            "url": resource.url,
+            "page_number": resource.meta_data.get("page_number"),
+        }
         index += 1
 
     with open(content_save_path, "w", encoding="utf-8") as f:

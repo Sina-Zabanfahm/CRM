@@ -42,7 +42,10 @@ class SimplePydanticExtractor(BaseExecution):
             kind = InputKinds.MARKDOWN.value,
             name = self.name,
             content = result,
-            meta={"url": resource.url}
+            meta={
+                "url": resource.url,
+                "page_number": resource.meta_data.get("page_number"),
+            }
         )
         return [out]
     
