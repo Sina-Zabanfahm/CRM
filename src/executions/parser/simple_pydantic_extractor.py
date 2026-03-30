@@ -1,8 +1,7 @@
-
+import logging
 from pydantic import BaseModel
 from typing import Type
 
-from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.language_models import BaseChatModel
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -12,7 +11,11 @@ from src.states.execution_state import ExecutionState
 from src.states.web_resources import WebResource
 from src.executions.base_execution import BaseExecution, InputSpec
 from src.executions.input_kinds import InputKinds
+from src.executions.parser.llm_input_logging import log_llm_input
 from src.prompts.parser import generic_extractor_prompt, generic_prompt_refiner
+
+
+LOGGER = logging.getLogger(__name__)
 
 class SimplePydanticExtractor(BaseExecution):
     input_spec = input_spec = (InputSpec(role = "web_resource", kind = InputKinds.WEBRESOURCE.value),
@@ -36,7 +39,13 @@ class SimplePydanticExtractor(BaseExecution):
         model = self.base_model
         resource: WebResource = inputs["web_resource"].content
         text = resource.content
-        result = await self.aextract(model, text)
+        result = await self.aextract(
+            model,
+            text,
+            run_id=run_id,
+            url=resource.url,
+            page_number=resource.meta_data.get("page_number"),
+        )
         out = Artifact[str](
             id = self.id,
             kind = InputKinds.MARKDOWN.value,
@@ -51,7 +60,15 @@ class SimplePydanticExtractor(BaseExecution):
     
 
 
-    async def aextract(self, model: Type[BaseModel], text:str) -> BaseModel:
+    async def aextract(
+        self,
+        model: Type[BaseModel],
+        text: str,
+        *,
+        run_id: str,
+        url: str | None,
+        page_number,
+    ) -> BaseModel:
         chunks = self.splitter.split_text(text)
         if not chunks:
             raise ValueError(f"Cannot chunk {text[:min(len(text),20)]}")
@@ -60,6 +77,16 @@ class SimplePydanticExtractor(BaseExecution):
         
         chain = generic_extractor_prompt | self.llm | parser
         format_instruction = parser.get_format_instructions()
+        log_llm_input(
+            LOGGER,
+            stage="initial_extract",
+            run_id=run_id,
+            url=url,
+            page_number=page_number,
+            chunk=chunks[0],
+            chunk_index=0,
+            chunk_count=len(chunks),
+        )
         current_obj = await chain.ainvoke(
             {
             "chunk" : chunks[0],
@@ -67,8 +94,19 @@ class SimplePydanticExtractor(BaseExecution):
             }
         )
         refine_chain = generic_prompt_refiner | self.llm | parser
-        for chunk in chunks[1:]:
+        for chunk_index, chunk in enumerate(chunks[1:], start=1):
             try:
+                log_llm_input(
+                    LOGGER,
+                    stage="refine_extract",
+                    run_id=run_id,
+                    url=url,
+                    page_number=page_number,
+                    chunk=chunk,
+                    chunk_index=chunk_index,
+                    chunk_count=len(chunks),
+                    current_json=current_obj.model_dump_json(),
+                )
                 current_obj = await refine_chain.ainvoke(
                     {
                         "current_json": current_obj.model_dump_json(),

@@ -14,6 +14,7 @@ from src.states.artifact import Artifact
 from src.states.web_resources import WebResource
 from src.executions.base_execution import BaseExecution, InputSpec
 from src.executions.input_kinds import InputKinds
+from src.executions.parser.llm_input_logging import log_llm_input
 from src.prompts.parser import generic_extractor_prompt, generic_prompt_refiner
 
 LOGGER = logging.getLogger(__name__)
@@ -50,7 +51,13 @@ class ParallelPydanticExtractor(BaseExecution):
         resource: WebResource = inputs["web_resource"].content
         text = resource.content
 
-        result = await self.aextract(self.base_model, text)
+        result = await self.aextract(
+            self.base_model,
+            text,
+            run_id=run_id,
+            url=resource.url,
+            page_number=resource.meta_data.get("page_number"),
+        )
 
         out = Artifact[str](
             id=self.id,
@@ -64,19 +71,43 @@ class ParallelPydanticExtractor(BaseExecution):
         )
         return [out]
 
-    async def aextract(self, model: Type[BaseModel], text: str) -> BaseModel:
+    async def aextract(
+        self,
+        model: Type[BaseModel],
+        text: str,
+        *,
+        run_id: str,
+        url: str | None,
+        page_number,
+    ) -> BaseModel:
         chunks = self.splitter.split_text(text)
         if not chunks:
             raise ValueError(f"Cannot chunk text: {text[: min(len(text), 20)]}")
 
-        partial_results = await self._extract_chunks_parallel(model, chunks)
-        merged_result = await self._merge_partial_results(model, partial_results)
+        partial_results = await self._extract_chunks_parallel(
+            model,
+            chunks,
+            run_id=run_id,
+            url=url,
+            page_number=page_number,
+        )
+        merged_result = await self._merge_partial_results(
+            model,
+            partial_results,
+            run_id=run_id,
+            url=url,
+            page_number=page_number,
+        )
         return merged_result
 
     async def _extract_chunks_parallel(
         self,
         model: Type[BaseModel],
         chunks: list[str],
+        *,
+        run_id: str,
+        url: str | None,
+        page_number,
     ) -> list[BaseModel]:
         parser = PydanticOutputParser(pydantic_object=model)
         format_instructions = parser.get_format_instructions()
@@ -87,6 +118,16 @@ class ParallelPydanticExtractor(BaseExecution):
         async def extract_one(idx: int, chunk: str) -> BaseModel | None:
             async with semaphore:
                 try:
+                    log_llm_input(
+                        LOGGER,
+                        stage="parallel_extract",
+                        run_id=run_id,
+                        url=url,
+                        page_number=page_number,
+                        chunk=chunk,
+                        chunk_index=idx,
+                        chunk_count=len(chunks),
+                    )
                     return await chain.ainvoke(
                         {
                             "chunk": chunk,
@@ -110,6 +151,10 @@ class ParallelPydanticExtractor(BaseExecution):
         self,
         model: Type[BaseModel],
         partial_results: list[BaseModel],
+        *,
+        run_id: str,
+        url: str | None,
+        page_number,
     ) -> BaseModel:
         if len(partial_results) == 1:
             return partial_results[0]
@@ -124,15 +169,28 @@ class ParallelPydanticExtractor(BaseExecution):
         merge_prompt = generic_prompt_refiner
 
         merge_chain = merge_prompt | self.llm | parser
+        current_json = json.dumps(partial_json_list, ensure_ascii=False)
+        merge_chunk = (
+            "Merge the list of extracted partial JSON objects into a single "
+            "final JSON object. Deduplicate repeated information, preserve "
+            "all valid fields, and return one schema-compliant result."
+        )
+        log_llm_input(
+            LOGGER,
+            stage="parallel_merge",
+            run_id=run_id,
+            url=url,
+            page_number=page_number,
+            chunk=merge_chunk,
+            chunk_index=0,
+            chunk_count=1,
+            current_json=current_json,
+        )
 
         merged = await merge_chain.ainvoke(
             {
-                "current_json": json.dumps(partial_json_list, ensure_ascii=False),
-                "chunk": (
-                    "Merge the list of extracted partial JSON objects into a single "
-                    "final JSON object. Deduplicate repeated information, preserve "
-                    "all valid fields, and return one schema-compliant result."
-                ),
+                "current_json": current_json,
+                "chunk": merge_chunk,
                 "format_instructions": format_instructions,
             }
         )

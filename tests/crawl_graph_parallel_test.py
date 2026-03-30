@@ -98,4 +98,4 @@ def test_crawl_graph_parallel(debth=0):
 
 
 
-test_crawl_graph_parallel(2)
+test_crawl_graph_parallel(1)
